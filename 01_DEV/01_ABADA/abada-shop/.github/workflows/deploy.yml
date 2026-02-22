@@ -196,10 +196,11 @@ jobs:
             docker compose --env-file .env.production -f docker-compose.yml -f docker-compose.prod.yml exec -T api npx prisma migrate deploy
 
             echo "Waiting for health check..."
-            sleep 15
+            sleep 20
 
             for i in 1 2 3 4 5; do
-              if curl -sf http://localhost:3001/health > /dev/null 2>&1; then
+              if docker compose --env-file .env.production -f docker-compose.yml -f docker-compose.prod.yml \
+                exec -T api wget -qO- http://localhost:3001/health > /dev/null 2>&1; then
                 echo "Health check passed!"
                 exit 0
               fi
