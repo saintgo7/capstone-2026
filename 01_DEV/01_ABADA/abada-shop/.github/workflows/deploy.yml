@@ -195,22 +195,29 @@ jobs:
 
             docker compose --env-file .env.production -f docker-compose.yml -f docker-compose.prod.yml exec -T api npx prisma migrate deploy
 
-            echo "Waiting for health check..."
-            sleep 20
+            echo "Waiting for API to start..."
+            sleep 30
+
+            echo "=== Container status ==="
+            docker ps --filter "name=abada" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+
+            echo "=== API logs (last 30 lines) ==="
+            docker logs abada-api --tail=30 2>&1 || true
+
+            echo "=== Health check attempt ==="
+            docker exec abada-api wget -qO- http://localhost:3001/health 2>&1 || echo "wget exit: $?"
 
             for i in 1 2 3 4 5; do
-              if docker compose --env-file .env.production -f docker-compose.yml -f docker-compose.prod.yml \
-                exec -T api wget -qO- http://localhost:3001/health > /dev/null 2>&1; then
+              if docker exec abada-api wget -qO- http://localhost:3001/health > /dev/null 2>&1; then
                 echo "Health check passed!"
                 exit 0
               fi
-              echo "Attempt $i failed, retrying in 5s..."
-              sleep 5
+              echo "Attempt $i failed, retrying in 10s..."
+              docker logs abada-api --tail=10 2>&1 || true
+              sleep 10
             done
 
-            echo "=== Container status ==="
-            docker ps -a --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
-            echo "=== API container logs (direct) ==="
-            docker logs abada-api --tail=50 2>&1 || true
+            echo "=== Final API logs ==="
+            docker logs abada-api --tail=100 2>&1 || true
             echo "Health check failed after 5 attempts"
             exit 1
