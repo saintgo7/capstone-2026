@@ -19,11 +19,11 @@ FROM base AS production
 ENV NODE_ENV=production
 
 COPY --from=deps /app/node_modules ./node_modules
+# Copy the generated Prisma client (engine binary) from builder - same version as @prisma/client
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/package*.json ./
-
-RUN npx prisma generate
 
 EXPOSE 3001
 
