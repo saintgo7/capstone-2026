@@ -118,4 +118,28 @@ export class OrderCommandHandlers {
 
     return toOrderDTO(order);
   }
+
+  async startShipping(cmd: { orderId: string }): Promise<OrderDTO> {
+    const order = await this.orderRepo.findById(OrderId.create(cmd.orderId));
+    if (!order) throw new NotFoundError('Order', cmd.orderId);
+
+    order.startShipping();
+
+    await this.orderRepo.save(order);
+    await this.publisher.publishAll(order.collectEvents());
+
+    return toOrderDTO(order);
+  }
+
+  async deliverOrder(cmd: { orderId: string }): Promise<OrderDTO> {
+    const order = await this.orderRepo.findById(OrderId.create(cmd.orderId));
+    if (!order) throw new NotFoundError('Order', cmd.orderId);
+
+    order.markDelivered();
+
+    await this.orderRepo.save(order);
+    await this.publisher.publishAll(order.collectEvents());
+
+    return toOrderDTO(order);
+  }
 }

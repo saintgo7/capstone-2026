@@ -37,4 +37,16 @@ export class OrderQueryHandlers {
     const orders = await this.orderRepo.findByCustomerId(query.customerId);
     return orders.map(toOrderDTO);
   }
+
+  async getAllOrders(query: {
+    status?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<{ orders: OrderDTO[]; total: number }> {
+    const [orders, total] = await Promise.all([
+      this.orderRepo.findAll(query),
+      this.orderRepo.countAll({ status: query.status }),
+    ]);
+    return { orders: orders.map(toOrderDTO), total };
+  }
 }

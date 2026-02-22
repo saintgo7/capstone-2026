@@ -27,4 +27,18 @@ export class InMemoryUserRepository implements UserRepository {
     }
     return false;
   }
+
+  async findAll(options?: { limit?: number; offset?: number; status?: string }): Promise<User[]> {
+    let users = Array.from(this.store.values());
+    if (options?.status) users = users.filter(u => u.status === options.status);
+    const offset = options?.offset ?? 0;
+    const limit = options?.limit ?? 50;
+    return users.slice(offset, offset + limit);
+  }
+
+  async countAll(options?: { status?: string }): Promise<number> {
+    let users = Array.from(this.store.values());
+    if (options?.status) users = users.filter(u => u.status === options.status);
+    return users.length;
+  }
 }

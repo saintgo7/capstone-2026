@@ -7,4 +7,6 @@ export interface OrderRepository {
   save(order: Order): Promise<void>;
   findById(id: OrderId): Promise<Order | null>;
   findByCustomerId(customerId: string): Promise<Order[]>;
+  findAll(options?: { status?: string; limit?: number; offset?: number }): Promise<Order[]>;
+  countAll(options?: { status?: string }): Promise<number>;
 }

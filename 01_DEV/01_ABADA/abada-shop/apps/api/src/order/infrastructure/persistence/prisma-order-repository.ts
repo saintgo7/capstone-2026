@@ -69,6 +69,23 @@ export class PrismaOrderRepository implements OrderRepository {
     return rows.map(r => this.toDomain(r));
   }
 
+  async findAll(options?: { status?: string; limit?: number; offset?: number }): Promise<Order[]> {
+    const rows = await this.db.order.findMany({
+      where: options?.status ? { status: options.status as any } : undefined,
+      include: { items: true },
+      orderBy: { createdAt: 'desc' },
+      take: options?.limit ?? 50,
+      skip: options?.offset ?? 0,
+    });
+    return rows.map(r => this.toDomain(r));
+  }
+
+  async countAll(options?: { status?: string }): Promise<number> {
+    return this.db.order.count({
+      where: options?.status ? { status: options.status as any } : undefined,
+    });
+  }
+
   private toDomain(row: any): Order {
     const items = (row.items ?? []).map((i: any) =>
       OrderItem.reconstitute({

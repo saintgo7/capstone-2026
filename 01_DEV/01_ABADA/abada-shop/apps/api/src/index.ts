@@ -11,6 +11,7 @@ import {
   ForbiddenError,
   ValidationError,
 } from './shared/domain/index.js';
+import { fail } from './shared/infrastructure/response-helper.js';
 import { ZodError } from 'zod';
 
 const PORT = Number(process.env['PORT'] ?? 3000);
@@ -28,45 +29,43 @@ async function main() {
     origin: process.env['CORS_ORIGIN'] ?? '*',
   });
 
-  // Global error handler
+  // Global error handler - standardized { success: false, error: { code, message, details? } }
   fastify.setErrorHandler((error: any, _req, reply) => {
     // Fastify built-in errors (JSON parse error, validation, etc.)
     if ('statusCode' in error && typeof error.statusCode === 'number' && !(error.statusCode >= 500)) {
       const statusCode = error.statusCode as number;
-      return reply.status(statusCode).send({ error: error.code ?? 'REQUEST_ERROR', message: error.message });
+      return reply.status(statusCode).send(fail(error.code ?? 'REQUEST_ERROR', error.message));
     }
 
     if (error instanceof ZodError) {
-      return reply.status(400).send({
-        error: 'VALIDATION_ERROR',
-        message: 'Invalid request',
-        details: error.errors,
-      });
+      return reply.status(400).send(
+        fail('VALIDATION_ERROR', 'Invalid request', error.errors),
+      );
     }
     if (error instanceof UnauthorizedError) {
-      return reply.status(401).send({ error: error.code, message: error.message });
+      return reply.status(401).send(fail(error.code, error.message));
     }
     if (error instanceof ForbiddenError) {
-      return reply.status(403).send({ error: error.code, message: error.message });
+      return reply.status(403).send(fail(error.code, error.message));
     }
     if (error instanceof NotFoundError) {
-      return reply.status(404).send({ error: error.code, message: error.message });
+      return reply.status(404).send(fail(error.code, error.message));
     }
     if (error instanceof ConflictError) {
-      return reply.status(409).send({ error: error.code, message: error.message });
+      return reply.status(409).send(fail(error.code, error.message));
     }
     if (error instanceof ValidationError) {
-      return reply.status(400).send({ error: error.code, message: error.message });
+      return reply.status(400).send(fail(error.code, error.message));
     }
     if (error instanceof DomainError) {
-      return reply.status(422).send({ error: 'DOMAIN_ERROR', message: error.message });
+      return reply.status(422).send(fail('DOMAIN_ERROR', error.message));
     }
     if (error instanceof ApplicationError) {
-      return reply.status(400).send({ error: error.code, message: error.message });
+      return reply.status(400).send(fail(error.code, error.message));
     }
 
     fastify.log.error(error);
-    return reply.status(500).send({ error: 'INTERNAL_ERROR', message: 'Internal server error' });
+    return reply.status(500).send(fail('INTERNAL_ERROR', 'Internal server error'));
   });
 
   // Health check
@@ -89,6 +88,7 @@ async function main() {
   await fastify.register(container.routes.inventory, { prefix: '/api/v1' });
   await fastify.register(container.routes.shipping, { prefix: '/api/v1' });
   await fastify.register(container.routes.catalog, { prefix: '/api/v1' });
+  await fastify.register(container.routes.admin, { prefix: '/api/v1' });
 
   try {
     await fastify.listen({ port: PORT, host: HOST });

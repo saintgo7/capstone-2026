@@ -9,9 +9,17 @@ export interface ProductRepository {
     status?: string;
     limit?: number;
     offset?: number;
+    cursor?: string;
     search?: string;
     categoryId?: string;
     minPrice?: number;
     maxPrice?: number;
   }): Promise<Product[]>;
+  countAll(options?: {
+    status?: string;
+    search?: string;
+    categoryId?: string;
+    minPrice?: number;
+    maxPrice?: number;
+  }): Promise<number>;
 }

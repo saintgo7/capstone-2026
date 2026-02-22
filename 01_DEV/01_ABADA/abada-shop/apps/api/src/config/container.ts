@@ -32,6 +32,7 @@ import { shippingRoutes } from '../shipping/interface/http/shipping-routes.js';
 import { CatalogCommandHandlers } from '../catalog/application/command/catalog-command-handlers.js';
 import { CatalogQueryHandlers } from '../catalog/application/query/catalog-query-handlers.js';
 import { catalogRoutes } from '../catalog/interface/http/catalog-routes.js';
+import { adminRoutes } from '../shared/interface/http/admin-routes.js';
 
 // Repository implementations
 import { InMemoryUserRepository } from '../user/infrastructure/persistence/in-memory-user-repository.js';
@@ -127,6 +128,16 @@ export function createContainer() {
       inventory: inventoryRoutes(inventoryCommandHandlers, inventoryQueryHandlers),
       shipping: shippingRoutes(shippingCommandHandlers, shippingQueryHandlers),
       catalog: catalogRoutes(catalogCommandHandlers, catalogQueryHandlers),
+      admin: adminRoutes({
+        userCommandHandlers,
+        userQueryHandlers,
+        productCommandHandlers,
+        productQueryHandlers,
+        orderCommandHandlers,
+        orderQueryHandlers,
+        inventoryCommandHandlers,
+        inventoryQueryHandlers,
+      }),
     },
     tokenIssuer,
   };

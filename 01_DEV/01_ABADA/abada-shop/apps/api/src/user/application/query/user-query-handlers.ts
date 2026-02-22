@@ -43,4 +43,16 @@ export class UserQueryHandlers {
       isDefault: a.isDefault,
     }));
   }
+
+  async getAllUsers(query: {
+    limit?: number;
+    offset?: number;
+    status?: string;
+  }): Promise<{ users: UserDTO[]; total: number }> {
+    const [users, total] = await Promise.all([
+      this.userRepo.findAll(query),
+      this.userRepo.countAll({ status: query.status }),
+    ]);
+    return { users: users.map(toUserDTO), total };
+  }
 }

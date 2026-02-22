@@ -2,6 +2,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { CartCommandHandlers } from '../../application/command/cart-command-handlers.js';
 import { CartQueryHandlers } from '../../application/query/cart-query-handlers.js';
 import { UnauthorizedError } from '../../../shared/domain/index.js';
+import { ok } from '../../../shared/infrastructure/response-helper.js';
 import { z } from 'zod';
 
 const addItemSchema = z.object({
@@ -30,7 +31,7 @@ export function cartRoutes(
     fastify.get('/cart', async (req: FastifyRequest, reply: FastifyReply) => {
       const userId = requireAuth(req);
       const cart = await queryHandlers.getCart({ userId });
-      return reply.send({ data: cart });
+      return reply.send(ok(cart));
     });
 
     // POST /cart/items - add item to cart
@@ -38,7 +39,7 @@ export function cartRoutes(
       const userId = requireAuth(req);
       const body = addItemSchema.parse(req.body);
       const cart = await commandHandlers.addItem({ userId, ...body });
-      return reply.status(201).send({ data: cart });
+      return reply.status(201).send(ok(cart));
     });
 
     // PUT /cart/items/:productId - update item quantity
@@ -47,7 +48,7 @@ export function cartRoutes(
       const { productId } = req.params as { productId: string };
       const body = updateQuantitySchema.parse(req.body);
       const cart = await commandHandlers.updateItemQuantity({ userId, productId, quantity: body.quantity });
-      return reply.send({ data: cart });
+      return reply.send(ok(cart));
     });
 
     // DELETE /cart/items/:productId - remove specific item
@@ -55,7 +56,7 @@ export function cartRoutes(
       const userId = requireAuth(req);
       const { productId } = req.params as { productId: string };
       const cart = await commandHandlers.removeItem({ userId, productId });
-      return reply.send({ data: cart });
+      return reply.send(ok(cart));
     });
 
     // DELETE /cart - clear entire cart

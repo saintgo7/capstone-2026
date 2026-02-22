@@ -1,6 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { CatalogCommandHandlers } from '../../application/command/catalog-command-handlers.js';
 import { CatalogQueryHandlers } from '../../application/query/catalog-query-handlers.js';
+import { ok } from '../../../shared/infrastructure/response-helper.js';
 import { z } from 'zod';
 
 const createCategorySchema = z.object({
@@ -33,21 +34,21 @@ export function catalogRoutes(
       if (query.isActive !== undefined) filter.isActive = query.isActive === 'true';
 
       const categories = await queryHandlers.getCategories(filter);
-      return reply.send({ data: categories });
+      return reply.send(ok(categories));
     });
 
     // GET /categories/:id - get category by id
     fastify.get('/categories/:id', async (req: FastifyRequest, reply: FastifyReply) => {
       const { id } = req.params as { id: string };
       const category = await queryHandlers.getCategory({ id });
-      return reply.send({ data: category });
+      return reply.send(ok(category));
     });
 
     // POST /categories - create category
     fastify.post('/categories', async (req: FastifyRequest, reply: FastifyReply) => {
       const body = createCategorySchema.parse(req.body);
       const category = await commandHandlers.createCategory(body);
-      return reply.status(201).send({ data: category });
+      return reply.status(201).send(ok(category));
     });
 
     // PUT /categories/:id - update category
@@ -55,7 +56,7 @@ export function catalogRoutes(
       const { id } = req.params as { id: string };
       const body = updateCategorySchema.parse(req.body);
       const category = await commandHandlers.updateCategory({ id, ...body });
-      return reply.send({ data: category });
+      return reply.send(ok(category));
     });
   };
 }

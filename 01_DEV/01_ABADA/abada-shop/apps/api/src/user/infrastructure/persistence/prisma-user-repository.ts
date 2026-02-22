@@ -47,6 +47,22 @@ export class PrismaUserRepository implements UserRepository {
     return count > 0;
   }
 
+  async findAll(options?: { limit?: number; offset?: number; status?: string }): Promise<User[]> {
+    const rows = await this.db.user.findMany({
+      where: options?.status ? { status: options.status as any } : undefined,
+      orderBy: { createdAt: 'desc' },
+      take: options?.limit ?? 50,
+      skip: options?.offset ?? 0,
+    });
+    return rows.map(r => this.toDomain(r));
+  }
+
+  async countAll(options?: { status?: string }): Promise<number> {
+    return this.db.user.count({
+      where: options?.status ? { status: options.status as any } : undefined,
+    });
+  }
+
   private toDomain(row: any): User {
     return User.reconstitute({
       id: row.id,

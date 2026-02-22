@@ -17,4 +17,18 @@ export class InMemoryOrderRepository implements OrderRepository {
     return Array.from(this.store.values())
       .filter(o => o.customerId === customerId);
   }
+
+  async findAll(options?: { status?: string; limit?: number; offset?: number }): Promise<Order[]> {
+    let orders = Array.from(this.store.values());
+    if (options?.status) orders = orders.filter(o => o.status === options.status);
+    const offset = options?.offset ?? 0;
+    const limit = options?.limit ?? 50;
+    return orders.slice(offset, offset + limit);
+  }
+
+  async countAll(options?: { status?: string }): Promise<number> {
+    let orders = Array.from(this.store.values());
+    if (options?.status) orders = orders.filter(o => o.status === options.status);
+    return orders.length;
+  }
 }

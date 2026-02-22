@@ -9,4 +9,6 @@ export interface UserRepository {
   findById(id: UserId): Promise<User | null>;
   findByEmail(email: Email): Promise<User | null>;
   existsByEmail(email: Email): Promise<boolean>;
+  findAll(options?: { limit?: number; offset?: number; status?: string }): Promise<User[]>;
+  countAll(options?: { status?: string }): Promise<number>;
 }

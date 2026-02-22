@@ -1,8 +1,31 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { createHmac, timingSafeEqual } from 'crypto';
 import { PaymentCommandHandlers } from '../../application/command/payment-command-handlers.js';
 import { PaymentQueryHandlers } from '../../application/query/payment-query-handlers.js';
 import { UnauthorizedError } from '../../../shared/domain/index.js';
+import { ok } from '../../../shared/infrastructure/response-helper.js';
 import { z } from 'zod';
+
+// Validate TossPayments webhook signature using HMAC-SHA256
+// Header: X-Toss-Signature (base64-encoded HMAC of request body)
+function verifyTossWebhookSignature(
+  rawBody: string,
+  signatureHeader: string | undefined,
+  secret: string,
+): boolean {
+  if (!signatureHeader) return false;
+  try {
+    const expected = createHmac('sha256', secret)
+      .update(rawBody, 'utf8')
+      .digest('base64');
+    const expectedBuf = Buffer.from(expected);
+    const receivedBuf = Buffer.from(signatureHeader);
+    if (expectedBuf.length !== receivedBuf.length) return false;
+    return timingSafeEqual(expectedBuf, receivedBuf);
+  } catch {
+    return false;
+  }
+}
 
 const initiatePaymentSchema = z.object({
   orderId: z.string().min(1),
@@ -46,7 +69,7 @@ export function paymentRoutes(
       requireAuth(req);
       const body = initiatePaymentSchema.parse(req.body);
       const payment = await commandHandlers.initiatePayment(body);
-      return reply.status(201).send({ data: payment });
+      return reply.status(201).send(ok(payment));
     });
 
     // GET /payments/:id - get payment by id
@@ -54,7 +77,7 @@ export function paymentRoutes(
       requireAuth(req);
       const { id } = req.params as { id: string };
       const payment = await queryHandlers.getPayment({ paymentId: id });
-      return reply.send({ data: payment });
+      return reply.send(ok(payment));
     });
 
     // GET /payments/orders/:orderId - get payment by order id
@@ -62,7 +85,7 @@ export function paymentRoutes(
       requireAuth(req);
       const { orderId } = req.params as { orderId: string };
       const payment = await queryHandlers.getPaymentByOrderId({ orderId });
-      return reply.send({ data: payment });
+      return reply.send(ok(payment));
     });
 
     // POST /payments/:id/complete - complete payment (direct, non-PG)
@@ -71,7 +94,7 @@ export function paymentRoutes(
       const { id } = req.params as { id: string };
       const body = completePaymentSchema.parse(req.body ?? {});
       const payment = await commandHandlers.completePayment({ paymentId: id, ...body });
-      return reply.send({ data: payment });
+      return reply.send(ok(payment));
     });
 
     // POST /payments/confirm - TossPayments payment confirmation
@@ -79,7 +102,7 @@ export function paymentRoutes(
       requireAuth(req);
       const body = tossConfirmSchema.parse(req.body);
       const payment = await commandHandlers.confirmTossPayment(body);
-      return reply.send({ data: payment });
+      return reply.send(ok(payment));
     });
 
     // POST /payments/:id/cancel - cancel payment via TossPayments
@@ -92,12 +115,26 @@ export function paymentRoutes(
         reason: body.reason,
         cancelAmount: body.cancelAmount,
       });
-      return reply.send({ data: payment });
+      return reply.send(ok(payment));
     });
 
-    // POST /payments/webhook/toss - TossPayments webhook handler
+    // POST /payments/webhook/toss - TossPayments webhook handler (signature-validated)
     fastify.post('/payments/webhook/toss', async (req: FastifyRequest, reply: FastifyReply) => {
-      // Webhook does not require user auth - validated by signature
+      // Verify X-Toss-Signature header before processing
+      const webhookSecret = process.env['TOSS_WEBHOOK_SECRET'] ?? '';
+      const signatureHeader = req.headers['x-toss-signature'] as string | undefined;
+
+      // In production, reject requests with invalid signatures
+      // In dev mode (no secret configured), skip validation
+      if (webhookSecret) {
+        const rawBody = JSON.stringify(req.body);
+        const valid = verifyTossWebhookSignature(rawBody, signatureHeader, webhookSecret);
+        if (!valid) {
+          fastify.log.warn('TossPayments webhook: invalid signature - request rejected');
+          return reply.status(401).send({ ok: false, reason: 'Invalid signature' });
+        }
+      }
+
       const { eventType, data } = req.body as {
         eventType: string;
         data: { paymentKey: string; orderId: string; status: string };
@@ -140,7 +177,7 @@ export function paymentRoutes(
       const { id } = req.params as { id: string };
       const body = failPaymentSchema.parse(req.body);
       const payment = await commandHandlers.failPayment({ paymentId: id, reason: body.reason });
-      return reply.send({ data: payment });
+      return reply.send(ok(payment));
     });
 
     // POST /payments/:id/refund - refund payment (non-PG)
@@ -148,7 +185,7 @@ export function paymentRoutes(
       requireAuth(req);
       const { id } = req.params as { id: string };
       const payment = await commandHandlers.refundPayment({ paymentId: id });
-      return reply.send({ data: payment });
+      return reply.send(ok(payment));
     });
   };
 }
