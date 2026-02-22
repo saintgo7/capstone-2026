@@ -1,33 +1,31 @@
 {
-  "feature": "abada-shop",
-  "phase": "archived",
+  "feature": "abada-shop-deploy",
+  "phase": "do",
   "level": "enterprise",
-  "matchRate": 90.6,
-  "iterationCount": 6,
-  "startedAt": "2026-02-22T02:53:00Z",
-  "lastUpdatedAt": "2026-02-22T19:45:00Z",
-  "archivedAt": "2026-02-22T19:45:00Z",
-  "archivedTo": "docs/archive/2026-02/abada-shop/",
-  "analysisNotes": "PDCA ARCHIVED. Phase 1: 91%, Phase 2: 90.6%. GitHub: https://github.com/saintgo7/saas-abada-shop. Phase 3 ready: Docker Compose + CI/CD + Admin detail pages.",
+  "matchRate": 0,
+  "iterationCount": 0,
+  "startedAt": "2026-02-22T19:50:00Z",
+  "lastUpdatedAt": "2026-02-22T19:50:00Z",
+  "previousFeature": {
+    "feature": "abada-shop",
+    "phase": "archived",
+    "matchRate": 90.6,
+    "archivedTo": "docs/archive/2026-02/abada-shop/"
+  },
   "stack": {
     "backend": "TypeScript + Fastify + DDD/CQRS",
     "frontend": "Next.js 15",
     "mobile": "React Native (Expo)",
     "database": "PostgreSQL 16",
     "cache": "Redis 7",
-    "deployment": "Cloudflare Tunnel",
+    "deployment": "Docker + GitHub Actions + Cloudflare Tunnel",
     "server": "ws-248-247",
-    "domain": "shop.abada.kr"
+    "domain": "shop.abada.kr",
+    "registry": "ghcr.io/saintgo7/saas-abada-shop"
   },
-  "phase3Ready": true,
-  "phase3NextSteps": [
-    "Docker Compose full stack test",
-    "GitHub Actions CI/CD",
-    "Real server (ws-248-247) deployment",
-    "Admin detail pages (/admin/products/[id], /admin/orders/[id])",
-    "Rate limiting",
-    "Product BC Prisma Repository",
-    "E2E tests (Playwright)",
-    "Monitoring (Sentry)"
+  "teamAgents": [
+    "infra-agent (sonnet): Docker Compose + Nginx + deploy.sh",
+    "cicd-agent (sonnet): GitHub Actions CI/CD",
+    "health-agent (sonnet): Health check + .env.production.example"
   ]
 }

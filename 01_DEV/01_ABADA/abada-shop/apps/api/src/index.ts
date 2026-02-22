@@ -2,6 +2,7 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import { createContainer } from './config/container.js';
 import { createAuthMiddleware } from './shared/infrastructure/auth-middleware.js';
+import { healthRoutes } from './health/health-routes.js';
 import {
   DomainError,
   ApplicationError,
@@ -68,12 +69,8 @@ async function main() {
     return reply.status(500).send(fail('INTERNAL_ERROR', 'Internal server error'));
   });
 
-  // Health check
-  fastify.get('/health', async () => ({
-    status: 'ok',
-    service: 'abada-shop-api',
-    timestamp: new Date().toISOString(),
-  }));
+  // Health check routes (registered before auth middleware - no auth required)
+  await fastify.register(healthRoutes, { prefix: '/health' });
 
   // Auth middleware (global preHandler)
   const container = createContainer();

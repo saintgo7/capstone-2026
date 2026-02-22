@@ -1,0 +1,143 @@
+name: Mobile Deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'mobile/**'
+      - 'eas.json'
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Build platform'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - ios
+          - android
+      profile:
+        description: 'Build profile'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - development
+          - preview
+          - production
+      submit:
+        description: 'Auto submit to store after build'
+        required: false
+        default: true
+        type: boolean
+
+jobs:
+  # ─────────────────────────────────────────
+  # OTA Update (JS 변경 시 자동 배포)
+  # ─────────────────────────────────────────
+  ota-update:
+    name: OTA Update
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    defaults:
+      run:
+        working-directory: mobile
+    env:
+      # Use env var to safely handle untrusted input
+      COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Publish OTA update
+        run: |
+          eas update \
+            --channel production \
+            --message "$COMMIT_MESSAGE" \
+            --non-interactive
+
+  # ─────────────────────────────────────────
+  # Native Build & Submit (수동 트리거)
+  # ─────────────────────────────────────────
+  native-build:
+    name: Native Build (${{ inputs.platform }}) - ${{ inputs.profile }}
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Build (with auto-submit)
+        if: inputs.submit == true && inputs.profile == 'production'
+        run: |
+          eas build \
+            --platform ${{ inputs.platform }} \
+            --profile ${{ inputs.profile }} \
+            --auto-submit \
+            --non-interactive
+
+      - name: Build (without auto-submit)
+        if: inputs.submit == false || inputs.profile != 'production'
+        run: |
+          eas build \
+            --platform ${{ inputs.platform }} \
+            --profile ${{ inputs.profile }} \
+            --non-interactive
+
+      - name: Notify Slack on success
+        if: success()
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          payload: |
+            {
+              "text": "Mobile 빌드 완료: ${{ inputs.platform }} / ${{ inputs.profile }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Notify Slack on failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          payload: |
+            {
+              "text": "Mobile 빌드 실패: ${{ inputs.platform }} / ${{ inputs.profile }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

@@ -1,0 +1,141 @@
+# Production override
+# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+services:
+  # ─────────────────────────────────────────
+  # Fastify API Server (Production)
+  # ─────────────────────────────────────────
+  api:
+    image: ghcr.io/saintgo7/saas-abada-shop-api:latest
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+      target: production
+    env_file:
+      - .env.production
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      HOST: 0.0.0.0
+    ports: []
+    volumes: []
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ─────────────────────────────────────────
+  # Next.js Web Frontend (Production)
+  # ─────────────────────────────────────────
+  web:
+    image: ghcr.io/saintgo7/saas-abada-shop-web:latest
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+      target: production
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://shop.abada.kr/api}
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-https://shop.abada.kr}
+    env_file:
+      - .env.production
+    environment:
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: 1
+    ports: []
+    volumes: []
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+        reservations:
+          cpus: "0.25"
+          memory: 512M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ─────────────────────────────────────────
+  # PostgreSQL 16 (Production)
+  # ─────────────────────────────────────────
+  postgres:
+    env_file:
+      - .env.production
+    ports: []
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+        reservations:
+          cpus: "0.25"
+          memory: 512M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ─────────────────────────────────────────
+  # Redis 7 (Production)
+  # ─────────────────────────────────────────
+  redis:
+    env_file:
+      - .env.production
+    ports: []
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+        reservations:
+          cpus: "0.1"
+          memory: 128M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ─────────────────────────────────────────
+  # Nginx Reverse Proxy (Production)
+  # ─────────────────────────────────────────
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: abada-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api
+      - web
+    networks:
+      - abada-network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:80/nginx-health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
