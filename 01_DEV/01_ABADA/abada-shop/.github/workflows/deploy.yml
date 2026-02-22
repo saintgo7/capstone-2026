@@ -219,14 +219,36 @@ jobs:
             echo "=== API logs (all) ==="
             docker logs abada-api 2>&1 || true
 
+            echo "=== Port/HTTP check (Node.js) ==="
+            docker exec abada-api node -e "
+const http = require('http');
+const req = http.request('http://localhost:3001/health', (res) => {
+  process.stdout.write('HTTP STATUS: ' + res.statusCode + '\n');
+  let body = '';
+  res.on('data', (d) => body += d);
+  res.on('end', () => { process.stdout.write('BODY: ' + body + '\n'); });
+});
+req.on('error', (e) => { process.stderr.write('HTTP ERROR: ' + e.message + '\n'); });
+req.end();
+" 2>&1 || true
+
+            echo "=== Port/HTTP check (wget verbose) ==="
+            docker exec abada-api sh -c 'wget -O- http://localhost:3001/health 2>&1; echo "[WGET_EXIT=$?]"' || true
+
             echo "=== Health check ==="
             for i in 1 2 3 4 5 6 7 8 9 10; do
-              if docker exec abada-api wget -qO- http://localhost:3001/health > /dev/null 2>&1; then
+              if docker exec abada-api node -e "
+const http = require('http');
+const req = http.request('http://localhost:3001/health', (res) => {
+  process.exit(res.statusCode >= 200 && res.statusCode < 300 ? 0 : 1);
+});
+req.on('error', () => process.exit(1));
+req.end();
+" 2>/dev/null; then
                 echo "Health check passed on attempt $i!"
                 exit 0
               fi
               echo "Attempt $i failed, waiting 10s..."
-              docker logs abada-api --since "${SINCE:-1970-01-01}" 2>&1 | tail -5 || true
               sleep 10
             done
 
