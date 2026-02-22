@@ -208,8 +208,10 @@ jobs:
             echo "=== API process list ==="
             docker exec abada-api ps aux 2>&1 || true
 
-            echo "=== Prisma engine binary check ==="
-            docker exec abada-api ls /app/node_modules/.prisma/client/ 2>&1 | head -5 || echo "No .prisma/client found"
+            echo "=== Prisma engine binary check (full) ==="
+            docker exec abada-api ls -la /app/node_modules/.prisma/client/ 2>&1 || echo "No .prisma/client found"
+            echo "=== @prisma/engines check ==="
+            docker exec abada-api ls /app/node_modules/@prisma/engines/ 2>&1 | head -10 || echo "No @prisma/engines found"
 
             echo "=== Node.js sanity check ==="
             docker exec abada-api node -e "process.stdout.write('node ok: ' + process.version + '\n')" 2>&1 || echo "node exec failed"

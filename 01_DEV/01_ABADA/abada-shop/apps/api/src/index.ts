@@ -15,20 +15,25 @@ import {
 import { fail } from './shared/infrastructure/response-helper.js';
 import { ZodError } from 'zod';
 
+process.stderr.write('[DEBUG] index.ts: all imports done\n');
+
 const PORT = Number(process.env['PORT'] ?? 3000);
 const HOST = process.env['HOST'] ?? '0.0.0.0';
 
 async function main() {
+  process.stderr.write('[DEBUG] main() started\n');
   const fastify = Fastify({
     logger: {
       level: process.env['LOG_LEVEL'] ?? 'info',
     },
   });
+  process.stderr.write('[DEBUG] fastify created\n');
 
   // CORS
   await fastify.register(cors, {
     origin: process.env['CORS_ORIGIN'] ?? '*',
   });
+  process.stderr.write('[DEBUG] cors registered\n');
 
   // Global error handler - standardized { success: false, error: { code, message, details? } }
   fastify.setErrorHandler((error: any, _req, reply) => {
@@ -71,9 +76,12 @@ async function main() {
 
   // Health check routes (registered before auth middleware - no auth required)
   await fastify.register(healthRoutes, { prefix: '/health' });
+  process.stderr.write('[DEBUG] healthRoutes registered\n');
 
   // Auth middleware (global preHandler)
+  process.stderr.write('[DEBUG] calling createContainer()\n');
   const container = createContainer();
+  process.stderr.write('[DEBUG] container created\n');
   fastify.addHook('preHandler', createAuthMiddleware(container.tokenIssuer));
 
   // Register routes
@@ -87,13 +95,19 @@ async function main() {
   await fastify.register(container.routes.catalog, { prefix: '/api/v1' });
   await fastify.register(container.routes.admin, { prefix: '/api/v1' });
 
+  process.stderr.write(`[DEBUG] calling fastify.listen on ${HOST}:${PORT}\n`);
   try {
     await fastify.listen({ port: PORT, host: HOST });
+    process.stderr.write('[DEBUG] fastify.listen() resolved\n');
     fastify.log.info(`Server running at http://${HOST}:${PORT}`);
   } catch (err) {
+    process.stderr.write(`[DEBUG] fastify.listen() error: ${String(err)}\n`);
     fastify.log.error(err);
     process.exit(1);
   }
 }
 
-main();
+main().catch((err) => {
+  process.stderr.write(`[DEBUG] main() unhandled error: ${String(err)}\n${err instanceof Error ? err.stack ?? '' : ''}\n`);
+  process.exit(1);
+});
