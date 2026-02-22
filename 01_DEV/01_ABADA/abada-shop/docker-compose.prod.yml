@@ -113,6 +113,26 @@ services:
         max-file: "3"
 
   # ─────────────────────────────────────────
+  # Cloudflare Tunnel (shop.abada.kr)
+  # ─────────────────────────────────────────
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: abada-cloudflared
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN}
+    depends_on:
+      - nginx
+    networks:
+      - abada-network
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # ─────────────────────────────────────────
   # Nginx Reverse Proxy (Production)
   # ─────────────────────────────────────────
   nginx:
