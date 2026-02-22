@@ -155,12 +155,14 @@ jobs:
     needs: [build]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     environment: production
+    permissions:
+      packages: read
     steps:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
         env:
-          GHCR_TOKEN: ${{ secrets.GHCR_DEPLOY_TOKEN }}
-          GHCR_USER: ${{ secrets.GHCR_DEPLOY_USER }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_USER: ${{ github.actor }}
         with:
           host: ${{ secrets.SSH_HOST }}
           port: ${{ secrets.SSH_PORT }}
