@@ -208,5 +208,7 @@ jobs:
               sleep 5
             done
 
+            echo "=== API container logs ==="
+            docker compose --env-file .env.production -f docker-compose.yml -f docker-compose.prod.yml logs api --tail=50
             echo "Health check failed after 5 attempts"
             exit 1
