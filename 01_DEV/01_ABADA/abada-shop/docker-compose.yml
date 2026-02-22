@@ -79,7 +79,7 @@ services:
     networks:
       - abada-network
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:3001/health"]
+      test: ["CMD", "node", "-e", "const h=require('http');h.request('http://localhost:3001/health',function(r){process.exit(r.statusCode>=200&&r.statusCode<300?0:1);}).on('error',function(){process.exit(1);}).end();"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -107,7 +107,7 @@ services:
     networks:
       - abada-network
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:3000"]
+      test: ["CMD", "node", "-e", "const h=require('http');h.request('http://localhost:3000',function(r){process.exit(r.statusCode>=200&&r.statusCode<300?0:1);}).on('error',function(){process.exit(1);}).end();"]
       interval: 30s
       timeout: 10s
       retries: 3

@@ -196,34 +196,8 @@ jobs:
             # Run DB migrations using pinned prisma version (matches @prisma/client)
             docker compose --env-file .env.production -f docker-compose.yml -f docker-compose.prod.yml exec -T api npx prisma@6.19.2 migrate deploy
 
-            echo "Waiting for API to start..."
-            sleep 20
-
             echo "=== Container status ==="
             docker ps --filter "name=abada" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
-
-            echo "=== API container inspect (restart count) ==="
-            docker inspect abada-api --format '{{.RestartCount}} restarts, State: {{.State.Status}}, ExitCode: {{.State.ExitCode}}' 2>&1 || true
-
-            echo "=== API process list ==="
-            docker exec abada-api ps aux 2>&1 || true
-
-            echo "=== Prisma engine binary check (full) ==="
-            docker exec abada-api ls -la /app/node_modules/.prisma/client/ 2>&1 || echo "No .prisma/client found"
-            echo "=== @prisma/engines check ==="
-            docker exec abada-api ls /app/node_modules/@prisma/engines/ 2>&1 | head -10 || echo "No @prisma/engines found"
-
-            echo "=== Node.js sanity check ==="
-            docker exec abada-api node -e "process.stdout.write('node ok: ' + process.version + '\n')" 2>&1 || echo "node exec failed"
-
-            echo "=== API logs (all) ==="
-            docker logs abada-api 2>&1 || true
-
-            echo "=== Port/HTTP check (Node.js) ==="
-            docker exec abada-api node -e "const h=require('http');h.request('http://localhost:3001/health',function(r){let b='';r.on('data',function(d){b+=d;});r.on('end',function(){process.stdout.write('STATUS:'+r.statusCode+' BODY:'+b+'\n');});}).on('error',function(e){process.stderr.write('HTTP_ERR:'+e.message+'\n');}).end();" 2>&1 || true
-
-            echo "=== Port/HTTP check (wget verbose) ==="
-            docker exec abada-api sh -c 'wget -O- http://localhost:3001/health 2>&1; echo "[WGET_EXIT=$?]"' || true
 
             echo "=== Health check ==="
             for i in 1 2 3 4 5 6 7 8 9 10; do
@@ -232,6 +206,7 @@ jobs:
                 exit 0
               fi
               echo "Attempt $i failed, waiting 10s..."
+              docker logs abada-api --tail 5 2>&1 || true
               sleep 10
             done
 
