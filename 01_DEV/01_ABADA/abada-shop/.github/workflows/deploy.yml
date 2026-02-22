@@ -157,6 +157,7 @@ jobs:
     environment: production
     permissions:
       packages: read
+      contents: read
     steps:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
