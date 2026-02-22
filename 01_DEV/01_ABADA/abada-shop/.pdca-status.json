@@ -1,0 +1,12 @@
+{
+  "abada-shop": {
+    "phase": "archived",
+    "matchRate": 90.6,
+    "iterationCount": 6,
+    "startedAt": "2026-02-22T02:53:00Z",
+    "archivedAt": "2026-02-22T19:45:00Z",
+    "archivedTo": "docs/archive/2026-02/abada-shop/",
+    "github": "https://github.com/saintgo7/saas-abada-shop",
+    "notes": "Phase 1 (5 iterations: 63%->91%) + Phase 2 Agent Teams + 1 iteration (84.1%->90.6%). 51 API endpoints, 8 BCs, 27 web pages, 12 mobile screens."
+  }
+}

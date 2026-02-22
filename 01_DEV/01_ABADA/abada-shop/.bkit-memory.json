@@ -1,12 +1,14 @@
 {
   "feature": "abada-shop",
-  "phase": "completed",
+  "phase": "archived",
   "level": "enterprise",
   "matchRate": 90.6,
-  "iterationCount": 1,
+  "iterationCount": 6,
   "startedAt": "2026-02-22T02:53:00Z",
-  "lastUpdatedAt": "2026-02-22T23:30:00Z",
-  "analysisNotes": "Act Phase 1 completed. matchRate 84.1% -> 90.6% (target >= 90% achieved). Key fixes: standard API response format (ok/fail helpers), admin API routes (/admin/*) with ADMIN role guard, TossPayments webhook HMAC-SHA256 validation, cursor-based pagination for product list, OrderRepository/UserRepository findAll+countAll for admin queries.",
+  "lastUpdatedAt": "2026-02-22T19:45:00Z",
+  "archivedAt": "2026-02-22T19:45:00Z",
+  "archivedTo": "docs/archive/2026-02/abada-shop/",
+  "analysisNotes": "PDCA ARCHIVED. Phase 1: 91%, Phase 2: 90.6%. GitHub: https://github.com/saintgo7/saas-abada-shop. Phase 3 ready: Docker Compose + CI/CD + Admin detail pages.",
   "stack": {
     "backend": "TypeScript + Fastify + DDD/CQRS",
     "frontend": "Next.js 15",
@@ -17,93 +19,15 @@
     "server": "ws-248-247",
     "domain": "shop.abada.kr"
   },
-  "categoryScores": {
-    "DB Schema": 92,
-    "User BC": 93,
-    "Product BC": 88,
-    "Order BC": 90,
-    "Payment BC": 95,
-    "Cart BC": 82,
-    "Inventory BC": 82,
-    "Catalog/Shipping BC": 84,
-    "API Design": 91,
-    "Frontend Web": 82,
-    "Mobile App": 88,
-    "Infrastructure": 82,
-    "Architecture Compliance": 95,
-    "Convention Compliance": 94
-  },
-  "actPhase1Changes": [
-    "shared/infrastructure/response-helper.ts: ok()/fail() standard response helpers",
-    "index.ts: global error handler uses fail() format",
-    "shared/interface/http/admin-routes.ts: 13 admin API endpoints with ADMIN role guard",
-    "config/container.ts: adminRoutes registered",
-    "payment/interface/http/payment-routes.ts: webhook HMAC-SHA256 validation (X-Toss-Signature)",
-    "product/interface/http/product-routes.ts: cursor-based pagination (?cursor=xxx&limit=20)",
-    "product/application/query/product-query-handlers.ts: getProductsWithCursor()",
-    "product/infrastructure/persistence/in-memory-product-repository.ts: cursor + countAll",
-    "product/domain/repository/product-repository.ts: cursor + countAll in interface",
-    "order/domain/repository/order-repository.ts: findAll + countAll in interface",
-    "order/infrastructure/persistence/*.ts: findAll + countAll in both impls",
-    "order/application/query/order-query-handlers.ts: getAllOrders()",
-    "order/application/command/order-command-handlers.ts: startShipping() + deliverOrder()",
-    "user/domain/repository/user-repository.ts: findAll + countAll in interface",
-    "user/infrastructure/persistence/*.ts: findAll + countAll in both impls",
-    "user/application/query/user-query-handlers.ts: getAllUsers()",
-    "All 8 BC route files: updated to use ok()/fail() helpers"
-  ],
-  "previousPhaseChanges": {
-    "phase2": [
-      "TossPaymentsGateway: confirm + cancel + mock mode (154 lines)",
-      "Payment routes: +3 endpoints (confirm, cancel, webhook/toss)",
-      "PaymentCommandHandlers: +confirmTossPayment, +cancelTossPayment",
-      "Web: payment/success/page.tsx (TossPayments redirect handler)",
-      "Web: payment/fail/page.tsx (failure display)",
-      "Web: checkout/page.tsx (TossPayments SDK dynamic loading)",
-      "Admin: layout.tsx (sidebar with 6 nav items)",
-      "Admin: page.tsx (SSR dashboard with stats)",
-      "Admin: products/page.tsx + products/new/page.tsx",
-      "Admin: orders/page.tsx (status tabs + status change)",
-      "Admin: inventory/page.tsx (stock adjustment)",
-      "Admin: categories/page.tsx (CRUD tree)",
-      "Admin: users/page.tsx (read-only list)",
-      "Mobile: checkout.tsx (full 5-step checkout flow)",
-      "Mobile: cart.tsx (checkout routing added)"
-    ],
-    "phase1_iteration5": [
-      "POST /auth/refresh endpoint",
-      "Order detail mobile screen",
-      "Global loading/error boundaries",
-      "Product search/filter params"
-    ]
-  },
-  "implementedContexts": [
-    "User (full stack + refresh token + admin findAll)",
-    "Product (full stack, InMemory only, cursor pagination)",
-    "Order (full stack + Prisma + admin findAll + ship/deliver)",
-    "Payment (full stack + TossPayments PG gateway + webhook HMAC)",
-    "Cart (full stack + Prisma)",
-    "Inventory (full stack + Prisma + admin route)",
-    "Shipping (full stack + Prisma)",
-    "Catalog (full stack + Prisma)"
-  ],
-  "remainingGaps": [
-    "Admin detail pages: /admin/products/[id], /admin/orders/[id] (web)",
-    "TossACL Port Interface: extract PaymentGateway port for DI",
-    "Mobile API endpoints: push token, biometric, deeplink",
-    "File Upload API: /files/presign",
-    "Rate Limiting: @fastify/rate-limit",
-    "Product BC Prisma Repository: schema alignment needed",
-    "SAGA pattern events: cross-context domain events"
-  ],
-  "designDocuments": [
-    "docs/02-design/features/domain-model-user-product.design.md",
-    "docs/02-design/features/domain-model-order-payment-inventory.design.md",
-    "docs/02-design/features/domain-model-catalog-shipping.design.md",
-    "docs/02-design/features/api-design.design.md",
-    "docs/02-design/features/infra-deployment.design.md",
-    "docs/02-design/features/db-schema.design.md",
-    "docs/02-design/features/mobile-deploy-monitoring.design.md",
-    "docs/02-design/features/frontend-web.design.md"
+  "phase3Ready": true,
+  "phase3NextSteps": [
+    "Docker Compose full stack test",
+    "GitHub Actions CI/CD",
+    "Real server (ws-248-247) deployment",
+    "Admin detail pages (/admin/products/[id], /admin/orders/[id])",
+    "Rate limiting",
+    "Product BC Prisma Repository",
+    "E2E tests (Playwright)",
+    "Monitoring (Sentry)"
   ]
 }
