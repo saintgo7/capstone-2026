@@ -163,10 +163,10 @@ jobs:
           GHCR_USER: ${{ secrets.GHCR_DEPLOY_USER }}
         with:
           host: ${{ secrets.SSH_HOST }}
+          port: ${{ secrets.SSH_PORT }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           envs: GHCR_TOKEN,GHCR_USER
-          script_stop: true
           script: |
             set -e
 
