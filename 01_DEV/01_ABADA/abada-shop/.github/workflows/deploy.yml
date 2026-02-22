@@ -39,10 +39,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Install dependencies (API)
+        run: npm install
+        working-directory: apps/api
+
+      - name: Install dependencies (Web)
+        run: npm install
+        working-directory: apps/web
 
       - name: Generate Prisma client
         run: npx prisma generate
@@ -70,10 +74,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Install dependencies (API)
+        run: npm install
+        working-directory: apps/api
 
       - name: Generate Prisma client
         run: npx prisma generate
@@ -168,21 +172,19 @@ jobs:
 
             cd ~/abada-shop
 
-            git pull origin main
-
             echo "${GHCR_TOKEN}" | docker login ghcr.io -u "${GHCR_USER}" --password-stdin
 
-            docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml pull api web
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml pull api web
 
-            docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml up -d --remove-orphans
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --remove-orphans
 
-            docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml exec -T api npx prisma migrate deploy
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml exec -T api npx prisma migrate deploy
 
             echo "Waiting for health check..."
-            sleep 10
+            sleep 15
 
             for i in 1 2 3 4 5; do
-              if curl -sf http://localhost:3000/health > /dev/null 2>&1; then
+              if curl -sf http://localhost:3001/health > /dev/null 2>&1; then
                 echo "Health check passed!"
                 exit 0
               fi
