@@ -220,31 +220,14 @@ jobs:
             docker logs abada-api 2>&1 || true
 
             echo "=== Port/HTTP check (Node.js) ==="
-            docker exec abada-api node -e "
-const http = require('http');
-const req = http.request('http://localhost:3001/health', (res) => {
-  process.stdout.write('HTTP STATUS: ' + res.statusCode + '\n');
-  let body = '';
-  res.on('data', (d) => body += d);
-  res.on('end', () => { process.stdout.write('BODY: ' + body + '\n'); });
-});
-req.on('error', (e) => { process.stderr.write('HTTP ERROR: ' + e.message + '\n'); });
-req.end();
-" 2>&1 || true
+            docker exec abada-api node -e "const h=require('http');h.request('http://localhost:3001/health',function(r){let b='';r.on('data',function(d){b+=d;});r.on('end',function(){process.stdout.write('STATUS:'+r.statusCode+' BODY:'+b+'\n');});}).on('error',function(e){process.stderr.write('HTTP_ERR:'+e.message+'\n');}).end();" 2>&1 || true
 
             echo "=== Port/HTTP check (wget verbose) ==="
             docker exec abada-api sh -c 'wget -O- http://localhost:3001/health 2>&1; echo "[WGET_EXIT=$?]"' || true
 
             echo "=== Health check ==="
             for i in 1 2 3 4 5 6 7 8 9 10; do
-              if docker exec abada-api node -e "
-const http = require('http');
-const req = http.request('http://localhost:3001/health', (res) => {
-  process.exit(res.statusCode >= 200 && res.statusCode < 300 ? 0 : 1);
-});
-req.on('error', () => process.exit(1));
-req.end();
-" 2>/dev/null; then
+              if docker exec abada-api node -e "const h=require('http');h.request('http://localhost:3001/health',function(r){process.exit(r.statusCode>=200&&r.statusCode<300?0:1);}).on('error',function(){process.exit(1);}).end();" 2>/dev/null; then
                 echo "Health check passed on attempt $i!"
                 exit 0
               fi
