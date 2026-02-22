@@ -1,0 +1,134 @@
+name: abada-shop
+
+networks:
+  abada-net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+
+services:
+  # ─────────────────────────────────────────
+  # Fastify API Server
+  # ─────────────────────────────────────────
+  api:
+    build:
+      context: ../apps/api
+      dockerfile: Dockerfile.dev
+    container_name: abada-api
+    restart: unless-stopped
+    env_file:
+      - ../.env
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-abada}:${POSTGRES_PASSWORD:-abada_secret}@postgres:5432/${POSTGRES_DB:-abada_shop}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis_secret}@redis:6379
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../apps/api:/app
+      - /app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - abada-net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ─────────────────────────────────────────
+  # Next.js Web Frontend
+  # ─────────────────────────────────────────
+  web:
+    build:
+      context: ../apps/web
+      dockerfile: Dockerfile.dev
+    container_name: abada-web
+    restart: unless-stopped
+    env_file:
+      - ../.env
+    environment:
+      NODE_ENV: development
+      PORT: 3001
+      NEXT_PUBLIC_API_URL: http://api:3000
+      NEXT_PUBLIC_SITE_URL: https://shop.abada.kr
+    ports:
+      - "3001:3001"
+    volumes:
+      - ../apps/web:/app
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      - api
+    networks:
+      - abada-net
+
+  # ─────────────────────────────────────────
+  # PostgreSQL 16
+  # ─────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: abada-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-abada}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-abada_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-abada_shop}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - abada-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-abada} -d ${POSTGRES_DB:-abada_shop}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ─────────────────────────────────────────
+  # Redis 7
+  # ─────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: abada-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis_secret}
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - abada-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "--no-auth-warning", "-a", "${REDIS_PASSWORD:-redis_secret}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─────────────────────────────────────────
+  # Adminer - DB Admin UI (dev only)
+  # ─────────────────────────────────────────
+  adminer:
+    image: adminer:latest
+    container_name: abada-adminer
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+      ADMINER_DESIGN: pepa-linha
+    depends_on:
+      - postgres
+    networks:
+      - abada-net

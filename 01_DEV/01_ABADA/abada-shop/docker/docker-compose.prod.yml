@@ -1,0 +1,138 @@
+version: "3.9"
+
+# Production override
+# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+services:
+  # ─────────────────────────────────────────
+  # Fastify API Server (Production)
+  # ─────────────────────────────────────────
+  api:
+    build:
+      context: ../apps/api
+      dockerfile: Dockerfile
+      target: production
+    env_file:
+      - ../.env.production
+    environment:
+      NODE_ENV: production
+    volumes: []  # No source mount in production
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ─────────────────────────────────────────
+  # Next.js Web Frontend (Production)
+  # ─────────────────────────────────────────
+  web:
+    build:
+      context: ../apps/web
+      dockerfile: Dockerfile
+      target: production
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL}
+    env_file:
+      - ../.env.production
+    environment:
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: 1
+    volumes: []  # No source mount in production
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+        reservations:
+          cpus: "0.25"
+          memory: 512M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ─────────────────────────────────────────
+  # PostgreSQL 16 (Production)
+  # ─────────────────────────────────────────
+  postgres:
+    env_file:
+      - ../.env.production
+    ports: []  # No external port exposure in production
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+        reservations:
+          cpus: "0.25"
+          memory: 512M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ─────────────────────────────────────────
+  # Redis 7 (Production)
+  # ─────────────────────────────────────────
+  redis:
+    env_file:
+      - ../.env.production
+    ports: []  # No external port exposure in production
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+        reservations:
+          cpus: "0.1"
+          memory: 128M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ─────────────────────────────────────────
+  # Cloudflare Tunnel (Production only)
+  # ─────────────────────────────────────────
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: abada-cloudflared
+    restart: always
+    command: tunnel --config /etc/cloudflare/config.yml run
+    volumes:
+      - ./cloudflare/config.yml:/etc/cloudflare/config.yml:ro
+      - ./cloudflare/credentials.json:/etc/cloudflare/credentials.json:ro
+    networks:
+      - abada-net
+    depends_on:
+      - api
+      - web
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ─────────────────────────────────────────
+  # Adminer - Disabled in production
+  # ─────────────────────────────────────────
+  adminer:
+    profiles:
+      - dev-only  # Never starts in production (no profile activation)

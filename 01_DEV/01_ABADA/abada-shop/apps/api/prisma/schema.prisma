@@ -1,0 +1,789 @@
+// prisma/schema.prisma
+// abada 쇼핑몰 Prisma Schema
+// Stack: TypeScript + Fastify + Prisma + PostgreSQL 16
+// Architecture: DDD + CQRS + Hexagonal
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [uuidOssp(map: "uuid-ossp"), pgTrgm(map: "pg_trgm")]
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────────────────────────────────────
+
+// User Context
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  WITHDRAWN
+}
+
+enum UserGrade {
+  NORMAL
+  SILVER
+  GOLD
+  VIP
+  VVIP
+}
+
+enum SocialProvider {
+  KAKAO
+  NAVER
+  GOOGLE
+  APPLE
+}
+
+enum PointHistoryType {
+  EARN
+  USE
+  EXPIRE
+  REFUND
+  ADMIN_ADJUST
+}
+
+// Product Context
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  INACTIVE
+  SOLD_OUT
+  DELETED
+}
+
+enum ProductType {
+  PHYSICAL
+  DIGITAL
+  SERVICE
+}
+
+enum ReviewStatus {
+  ACTIVE
+  HIDDEN
+  DELETED
+}
+
+// Order Context
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  SHIPPING
+  DELIVERED
+  CANCELLED
+  REFUNDING
+  REFUNDED
+}
+
+enum OrderItemStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  SHIPPING
+  DELIVERED
+  CANCELLED
+  RETURN_REQUESTED
+  RETURNED
+}
+
+enum CancelReason {
+  CHANGE_MIND
+  WRONG_ORDER
+  OUT_OF_STOCK
+  DELIVERY_DELAY
+  OTHER
+}
+
+// Payment Context
+enum PaymentMethod {
+  CARD
+  VIRTUAL_ACCOUNT
+  TRANSFER
+  POINT
+  KAKAO_PAY
+  NAVER_PAY
+  TOSS_PAY
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELLED
+  REFUNDED
+  PARTIAL_REFUNDED
+}
+
+enum RefundStatus {
+  REQUESTED
+  PROCESSING
+  COMPLETED
+  REJECTED
+}
+
+// Inventory Context
+enum StockReservationStatus {
+  RESERVED
+  CONFIRMED
+  RELEASED
+  EXPIRED
+}
+
+// Shipping Context
+enum ShipmentStatus {
+  PREPARING
+  SHIPPED
+  IN_TRANSIT
+  OUT_FOR_DELIVERY
+  DELIVERED
+  FAILED
+  RETURNED
+}
+
+enum CarrierCode {
+  CJ
+  LOTTE
+  POST
+  HANJIN
+  FEDEX
+  DHL
+  EMS
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// USER CONTEXT
+// ─────────────────────────────────────────────────────────────────────────────
+
+model User {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email           String    @db.VarChar(255)
+  passwordHash    String?   @map("password_hash") @db.VarChar(255)
+  name            String    @db.VarChar(100)
+  phone           String?   @db.VarChar(20)
+  profileImage    String?   @map("profile_image") @db.VarChar(500)
+  status          UserStatus @default(ACTIVE)
+  grade           UserGrade  @default(NORMAL)
+  birthDate       DateTime? @map("birth_date") @db.Date
+  gender          String?   @db.VarChar(10)
+  marketingAgreed Boolean   @default(false) @map("marketing_agreed")
+  lastLoginAt     DateTime? @map("last_login_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  addresses       UserAddress[]
+  points          UserPoint?
+  pointHistories  PointHistory[]
+  socialAccounts  SocialAccount[]
+
+  @@unique([email], name: "uq_users_email")
+  @@index([status, grade])
+  @@index([createdAt(sort: Desc)])
+  @@map("users")
+}
+
+model UserAddress {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  alias     String   @db.VarChar(50)
+  recipient String   @db.VarChar(100)
+  phone     String   @db.VarChar(20)
+  zipcode   String   @db.VarChar(10)
+  address1  String   @db.VarChar(200)
+  address2  String?  @db.VarChar(200)
+  isDefault Boolean  @default(false) @map("is_default")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("user_addresses")
+}
+
+model UserPoint {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String   @unique @map("user_id") @db.Uuid
+  balance        BigInt   @default(0)
+  lifetimeEarned BigInt   @default(0) @map("lifetime_earned")
+  lifetimeUsed   BigInt   @default(0) @map("lifetime_used")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("user_points")
+}
+
+model PointHistory {
+  id           String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId       String           @map("user_id") @db.Uuid
+  type         PointHistoryType
+  amount       BigInt
+  balanceAfter BigInt           @map("balance_after")
+  description  String           @db.VarChar(200)
+  referenceId  String?          @map("reference_id") @db.Uuid
+  expiresAt    DateTime?        @map("expires_at")
+  createdAt    DateTime         @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, expiresAt])
+  @@index([referenceId])
+  @@map("point_histories")
+}
+
+model SocialAccount {
+  id             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String         @map("user_id") @db.Uuid
+  provider       SocialProvider
+  providerId     String         @map("provider_id") @db.VarChar(200)
+  providerEmail  String?        @map("provider_email") @db.VarChar(255)
+  accessToken    String?        @map("access_token")
+  refreshToken   String?        @map("refresh_token")
+  tokenExpiresAt DateTime?      @map("token_expires_at")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([provider, providerId])
+  @@index([userId])
+  @@map("social_accounts")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PRODUCT CONTEXT
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Product {
+  id               String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name             String        @db.VarChar(300)
+  slug             String        @db.VarChar(300)
+  description      String?
+  shortDescription String?       @map("short_description") @db.VarChar(500)
+  type             ProductType   @default(PHYSICAL)
+  status           ProductStatus @default(DRAFT)
+  basePrice        BigInt        @map("base_price")
+  salePrice        BigInt?       @map("sale_price")
+  costPrice        BigInt?       @map("cost_price")
+  brand            String?       @db.VarChar(100)
+  tags             String[]
+  weightGram       Int?          @map("weight_gram")
+  metaTitle        String?       @map("meta_title") @db.VarChar(300)
+  metaDescription  String?       @map("meta_description") @db.VarChar(500)
+  isFeatured       Boolean       @default(false) @map("is_featured")
+  sortOrder        Int           @default(0) @map("sort_order")
+  viewCount        BigInt        @default(0) @map("view_count")
+  reviewCount      Int           @default(0) @map("review_count")
+  reviewAvgScore   Decimal?      @map("review_avg_score") @db.Decimal(3, 2)
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+  deletedAt        DateTime?     @map("deleted_at")
+
+  options         ProductOption[]
+  skus            ProductSku[]
+  images          ProductImage[]
+  reviews         ProductReview[]
+  categories      ProductCategory[]
+  catalogDisplays ProductCatalogDisplay[]
+  wishlists       Wishlist[]
+
+  @@unique([slug], name: "uq_products_slug")
+  @@index([status, sortOrder])
+  @@index([status, isFeatured])
+  @@index([createdAt(sort: Desc)])
+  @@map("products")
+}
+
+model ProductOption {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId String   @map("product_id") @db.Uuid
+  name      String   @db.VarChar(100)
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  product Product              @relation(fields: [productId], references: [id])
+  values  ProductOptionValue[]
+
+  @@index([productId])
+  @@map("product_options")
+}
+
+model ProductOptionValue {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  optionId  String   @map("option_id") @db.Uuid
+  value     String   @db.VarChar(100)
+  colorHex  String?  @map("color_hex") @db.VarChar(7)
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  option   ProductOption     @relation(fields: [optionId], references: [id])
+  skuLinks ProductSkuOption[]
+
+  @@index([optionId])
+  @@map("product_option_values")
+}
+
+model ProductSku {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId     String   @map("product_id") @db.Uuid
+  skuCode       String   @map("sku_code") @db.VarChar(100)
+  priceModifier BigInt   @default(0) @map("price_modifier")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  product  Product           @relation(fields: [productId], references: [id])
+  options  ProductSkuOption[]
+  images   ProductImage[]
+
+  @@unique([productId, skuCode])
+  @@index([productId, isActive])
+  @@map("product_skus")
+}
+
+model ProductSkuOption {
+  skuId         String @map("sku_id") @db.Uuid
+  optionValueId String @map("option_value_id") @db.Uuid
+
+  sku         ProductSku         @relation(fields: [skuId], references: [id])
+  optionValue ProductOptionValue @relation(fields: [optionValueId], references: [id])
+
+  @@id([skuId, optionValueId])
+  @@map("product_sku_options")
+}
+
+model ProductImage {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId   String   @map("product_id") @db.Uuid
+  skuId       String?  @map("sku_id") @db.Uuid
+  url         String   @db.VarChar(500)
+  altText     String?  @map("alt_text") @db.VarChar(200)
+  isThumbnail Boolean  @default(false) @map("is_thumbnail")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  product Product     @relation(fields: [productId], references: [id])
+  sku     ProductSku? @relation(fields: [skuId], references: [id])
+
+  @@index([productId, sortOrder])
+  @@map("product_images")
+}
+
+model ProductReview {
+  id           String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId    String       @map("product_id") @db.Uuid
+  userId       String       @map("user_id") @db.Uuid
+  orderItemId  String       @unique @map("order_item_id") @db.Uuid
+  score        Int          @db.SmallInt
+  title        String?      @db.VarChar(200)
+  content      String
+  images       String[]
+  isVerified   Boolean      @default(true) @map("is_verified")
+  status       ReviewStatus @default(ACTIVE)
+  helpfulCount Int          @default(0) @map("helpful_count")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+  deletedAt    DateTime?    @map("deleted_at")
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([productId, status, createdAt(sort: Desc)])
+  @@index([userId])
+  @@map("product_reviews")
+}
+
+model Wishlist {
+  userId    String   @map("user_id") @db.Uuid
+  productId String   @map("product_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@id([userId, productId])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([productId])
+  @@map("wishlists")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CATALOG CONTEXT
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Category {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  parentId        String?  @map("parent_id") @db.Uuid
+  name            String   @db.VarChar(100)
+  slug            String   @unique @db.VarChar(200)
+  description     String?  @db.VarChar(500)
+  imageUrl        String?  @map("image_url") @db.VarChar(500)
+  depth           Int      @db.SmallInt
+  sortOrder       Int      @default(0) @map("sort_order")
+  isActive        Boolean  @default(true) @map("is_active")
+  metaTitle       String?  @map("meta_title") @db.VarChar(300)
+  metaDescription String?  @map("meta_description") @db.VarChar(500)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryTree")
+
+  productCategories ProductCategory[]
+  catalogDisplays   ProductCatalogDisplay[]
+
+  @@index([parentId, sortOrder])
+  @@index([depth, isActive, sortOrder])
+  @@map("categories")
+}
+
+model ProductCategory {
+  productId  String  @map("product_id") @db.Uuid
+  categoryId String  @map("category_id") @db.Uuid
+  isPrimary  Boolean @default(false) @map("is_primary")
+
+  product  Product  @relation(fields: [productId], references: [id])
+  category Category @relation(fields: [categoryId], references: [id])
+
+  @@id([productId, categoryId])
+  @@index([categoryId, isPrimary])
+  @@map("product_categories")
+}
+
+model ProductCatalogDisplay {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId   String    @map("product_id") @db.Uuid
+  categoryId  String?   @map("category_id") @db.Uuid
+  displayZone String    @db.VarChar(100)
+  sortOrder   Int       @default(0) @map("sort_order")
+  startsAt    DateTime? @map("starts_at")
+  endsAt      DateTime? @map("ends_at")
+  isActive    Boolean   @default(true) @map("is_active")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  product  Product   @relation(fields: [productId], references: [id])
+  category Category? @relation(fields: [categoryId], references: [id])
+
+  @@index([categoryId, isActive, sortOrder])
+  @@index([displayZone, isActive, sortOrder])
+  @@map("product_catalog_displays")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ORDER CONTEXT
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Cart {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @unique @map("user_id") @db.VarChar(255)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  items CartItem[]
+
+  @@index([userId])
+  @@map("carts")
+}
+
+model CartItem {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cartId      String   @map("cart_id") @db.Uuid
+  productId   String   @map("product_id") @db.VarChar(255)
+  productName String   @map("product_name") @db.VarChar(300)
+  quantity    Int
+  unitPrice   BigInt   @map("unit_price")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  cart Cart @relation(fields: [cartId], references: [id], onDelete: Cascade)
+
+  @@unique([cartId, productId])
+  @@index([cartId])
+  @@map("cart_items")
+}
+
+model Order {
+  id               String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderNumber      String        @unique @map("order_number") @db.VarChar(30)
+  userId           String?       @map("user_id") @db.Uuid
+  guestEmail       String?       @map("guest_email") @db.VarChar(255)
+  status           OrderStatus   @default(PENDING)
+  // amounts
+  subtotal         BigInt
+  discountAmount   BigInt        @default(0) @map("discount_amount")
+  shippingFee      BigInt        @default(0) @map("shipping_fee")
+  pointUsed        BigInt        @default(0) @map("point_used")
+  couponDiscount   BigInt        @default(0) @map("coupon_discount")
+  totalAmount      BigInt        @map("total_amount")
+  // shipping snapshot
+  shippingName     String        @map("shipping_name") @db.VarChar(100)
+  shippingPhone    String        @map("shipping_phone") @db.VarChar(20)
+  shippingZipcode  String        @map("shipping_zipcode") @db.VarChar(10)
+  shippingAddress1 String        @map("shipping_address1") @db.VarChar(200)
+  shippingAddress2 String?       @map("shipping_address2") @db.VarChar(200)
+  // notes
+  customerNote     String?       @map("customer_note") @db.VarChar(500)
+  adminNote        String?       @map("admin_note") @db.VarChar(500)
+  // timestamps
+  confirmedAt      DateTime?     @map("confirmed_at")
+  cancelledAt      DateTime?     @map("cancelled_at")
+  cancelReason     CancelReason? @map("cancel_reason")
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  items           OrderItem[]
+  statusHistories OrderStatusHistory[]
+  returnRequests  ReturnRequest[]
+  payment         Payment?
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([status, createdAt(sort: Desc)])
+  @@index([createdAt(sort: Desc)])
+  @@map("orders")
+}
+
+model OrderItem {
+  id            String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId       String          @map("order_id") @db.Uuid
+  productId     String          @map("product_id") @db.Uuid
+  skuId         String          @map("sku_id") @db.Uuid
+  // snapshot
+  productName   String          @map("product_name") @db.VarChar(300)
+  productImage  String?         @map("product_image") @db.VarChar(500)
+  optionSummary String?         @map("option_summary") @db.VarChar(200)
+  skuCode       String          @map("sku_code") @db.VarChar(100)
+  // price
+  unitPrice     BigInt          @map("unit_price")
+  quantity      Int
+  totalPrice    BigInt          @map("total_price")
+  // status
+  status        OrderItemStatus @default(PENDING)
+  isReviewed    Boolean         @default(false) @map("is_reviewed")
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+
+  order          Order           @relation(fields: [orderId], references: [id])
+  returnRequests ReturnRequest[]
+
+  @@index([orderId])
+  @@index([skuId, status])
+  @@index([productId])
+  @@map("order_items")
+}
+
+model OrderStatusHistory {
+  id         String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId    String       @map("order_id") @db.Uuid
+  fromStatus OrderStatus? @map("from_status")
+  toStatus   OrderStatus  @map("to_status")
+  changedBy  String?      @map("changed_by") @db.Uuid
+  note       String?      @db.VarChar(500)
+  createdAt  DateTime     @default(now()) @map("created_at")
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@index([orderId, createdAt])
+  @@map("order_status_histories")
+}
+
+model ReturnRequest {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId     String    @map("order_id") @db.Uuid
+  orderItemId String    @map("order_item_id") @db.Uuid
+  requestType String    @map("request_type") @db.VarChar(20)
+  reason      String    @db.VarChar(50)
+  detail      String?
+  images      String[]
+  quantity    Int
+  status      String    @db.VarChar(30)
+  adminNote   String?   @map("admin_note") @db.VarChar(500)
+  processedAt DateTime? @map("processed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  order     Order     @relation(fields: [orderId], references: [id])
+  orderItem OrderItem @relation(fields: [orderItemId], references: [id])
+
+  @@index([orderId])
+  @@index([orderItemId])
+  @@index([status, createdAt(sort: Desc)])
+  @@map("return_requests")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PAYMENT CONTEXT
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Payment {
+  id               String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId          String        @unique @map("order_id") @db.Uuid
+  paymentKey       String?       @unique @map("payment_key") @db.VarChar(200)
+  method           PaymentMethod
+  status           PaymentStatus @default(PENDING)
+  // amounts
+  requestedAmount  BigInt        @map("requested_amount")
+  paidAmount       BigInt?       @map("paid_amount")
+  // card info
+  cardNumber       String?       @map("card_number") @db.VarChar(20)
+  cardCompany      String?       @map("card_company") @db.VarChar(50)
+  installment      Int?          @db.SmallInt
+  // virtual account
+  virtualBank      String?       @map("virtual_bank") @db.VarChar(50)
+  virtualAccount   String?       @map("virtual_account") @db.VarChar(30)
+  virtualExpiresAt DateTime?     @map("virtual_expires_at")
+  // receipt
+  receiptUrl       String?       @map("receipt_url") @db.VarChar(500)
+  // PG response
+  pgResponse       Json?         @map("pg_response")
+  // timestamps
+  paidAt           DateTime?     @map("paid_at")
+  failedAt         DateTime?     @map("failed_at")
+  failReason       String?       @map("fail_reason") @db.VarChar(200)
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  order   Order           @relation(fields: [orderId], references: [id])
+  refunds PaymentRefund[]
+
+  @@index([status, createdAt(sort: Desc)])
+  @@index([paidAt(sort: Desc)])
+  @@map("payments")
+}
+
+model PaymentRefund {
+  id            String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  paymentId     String       @map("payment_id") @db.Uuid
+  orderId       String       @map("order_id") @db.Uuid
+  refundKey     String?      @map("refund_key") @db.VarChar(200)
+  amount        BigInt
+  reason        String       @db.VarChar(200)
+  status        RefundStatus @default(REQUESTED)
+  // bank refund
+  bankName      String?      @map("bank_name") @db.VarChar(50)
+  accountNumber String?      @map("account_number") @db.VarChar(30)
+  accountHolder String?      @map("account_holder") @db.VarChar(50)
+  // processing
+  processedBy   String?      @map("processed_by") @db.Uuid
+  pgResponse    Json?        @map("pg_response")
+  refundedAt    DateTime?    @map("refunded_at")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+
+  payment Payment @relation(fields: [paymentId], references: [id])
+
+  @@index([paymentId])
+  @@index([orderId])
+  @@index([status, createdAt(sort: Desc)])
+  @@map("payment_refunds")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INVENTORY CONTEXT
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Stock {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  skuId       String   @unique @map("sku_id") @db.Uuid
+  quantity    Int      @default(0)
+  reserved    Int      @default(0)
+  available   Int      @default(0)
+  safetyStock Int      @default(0) @map("safety_stock")
+  location    String?  @db.VarChar(100)
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  reservations StockReservation[]
+  histories    StockHistory[]
+
+  @@index([available])
+  @@map("stocks")
+}
+
+model StockReservation {
+  id        String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  stockId   String                 @map("stock_id") @db.Uuid
+  orderId   String                 @map("order_id") @db.Uuid
+  skuId     String                 @map("sku_id") @db.Uuid
+  quantity  Int
+  status    StockReservationStatus @default(RESERVED)
+  expiresAt DateTime               @map("expires_at")
+  createdAt DateTime               @default(now()) @map("created_at")
+  updatedAt DateTime               @updatedAt @map("updated_at")
+
+  stock Stock @relation(fields: [stockId], references: [id])
+
+  @@index([stockId, status])
+  @@index([orderId])
+  @@index([expiresAt, status])
+  @@map("stock_reservations")
+}
+
+model StockHistory {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  skuId          String   @map("sku_id") @db.Uuid
+  changeType     String   @map("change_type") @db.VarChar(50)
+  quantityDelta  Int      @map("quantity_delta")
+  quantityBefore Int      @map("quantity_before")
+  quantityAfter  Int      @map("quantity_after")
+  referenceId    String?  @map("reference_id") @db.Uuid
+  note           String?  @db.VarChar(200)
+  createdBy      String?  @map("created_by") @db.Uuid
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  stock Stock @relation(fields: [skuId], references: [skuId])
+
+  @@index([skuId, createdAt(sort: Desc)])
+  @@index([referenceId])
+  @@map("stock_histories")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SHIPPING CONTEXT
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Shipment {
+  id             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId        String         @unique @map("order_id") @db.Uuid
+  carrierCode    CarrierCode    @map("carrier_code")
+  trackingNumber String?        @map("tracking_number") @db.VarChar(50)
+  status         ShipmentStatus @default(PREPARING)
+  // delivery address snapshot
+  recipientName  String         @map("recipient_name") @db.VarChar(100)
+  recipientPhone String         @map("recipient_phone") @db.VarChar(20)
+  zipcode        String         @db.VarChar(10)
+  address1       String         @db.VarChar(200)
+  address2       String?        @db.VarChar(200)
+  deliveryNote   String?        @map("delivery_note") @db.VarChar(300)
+  // timestamps
+  shippedAt      DateTime?      @map("shipped_at")
+  deliveredAt    DateTime?      @map("delivered_at")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  trackingEvents TrackingEvent[]
+
+  @@index([status, createdAt(sort: Desc)])
+  @@map("shipments")
+}
+
+model TrackingEvent {
+  id          String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  shipmentId  String         @map("shipment_id") @db.Uuid
+  status      ShipmentStatus
+  location    String?        @db.VarChar(200)
+  description String         @db.VarChar(300)
+  eventTime   DateTime       @map("event_time")
+  createdAt   DateTime       @default(now()) @map("created_at")
+
+  shipment Shipment @relation(fields: [shipmentId], references: [id])
+
+  @@index([shipmentId, eventTime(sort: Desc)])
+  @@map("tracking_events")
+}

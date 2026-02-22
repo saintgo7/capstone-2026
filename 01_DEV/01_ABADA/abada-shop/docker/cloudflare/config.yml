@@ -1,0 +1,38 @@
+# Cloudflare Tunnel Configuration
+# Tunnel: abada-shop
+# Server: ws-248-247
+#
+# Setup:
+#   1. cloudflared tunnel login
+#   2. cloudflared tunnel create abada-shop
+#   3. Replace <tunnel-id> with actual tunnel UUID
+#   4. cloudflared tunnel route dns abada-shop shop.abada.kr
+#   5. cloudflared tunnel route dns abada-shop api.shop.abada.kr
+
+tunnel: <tunnel-id>
+credentials-file: /etc/cloudflare/credentials.json
+
+# Logging
+loglevel: info
+logfile: /var/log/cloudflared.log
+
+# Ingress rules (order matters - first match wins)
+ingress:
+  # Web frontend
+  - hostname: shop.abada.kr
+    service: http://web:3001
+    originRequest:
+      connectTimeout: 30s
+      noTLSVerify: false
+      httpHostHeader: shop.abada.kr
+
+  # API server
+  - hostname: api.shop.abada.kr
+    service: http://api:3000
+    originRequest:
+      connectTimeout: 30s
+      noTLSVerify: false
+      httpHostHeader: api.shop.abada.kr
+
+  # Catch-all (required - must be last)
+  - service: http_status:404
