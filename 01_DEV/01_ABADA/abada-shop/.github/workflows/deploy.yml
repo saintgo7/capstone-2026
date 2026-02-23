@@ -199,6 +199,9 @@ jobs:
             echo "=== Container status ==="
             docker ps --filter "name=abada" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 
+            echo "=== Cloudflared logs ==="
+            docker logs abada-cloudflared --tail 20 2>&1 || true
+
             echo "=== Health check ==="
             for i in 1 2 3 4 5 6 7 8 9 10; do
               if docker exec abada-api node -e "const h=require('http');h.request('http://localhost:3001/health',function(r){process.exit(r.statusCode>=200&&r.statusCode<300?0:1);}).on('error',function(){process.exit(1);}).end();" 2>/dev/null; then
