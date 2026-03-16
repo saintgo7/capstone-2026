@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>공지사항 | 인공지능융합학과</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <nav class="navbar">
+      <div class="logo">AI융합학과</div>
+      <ul class="nav-links">
+        <li><a href="index.html">홈</a></li>
+        <li><a href="program.html">교수진 &amp; 커리큘럼</a></li>
+        <li><a href="notices.html" class="active">공지사항</a></li>
+        <li><a href="gallery.html">갤러리</a></li>
+        <li><a href="contact.html">연락처</a></li>
+      </ul>
+      <button class="menu-toggle" aria-label="메뉴 열기">☰</button>
+    </nav>
+  </header>
+
+  <section class="page-hero">
+    <h1>공지사항</h1>
+    <p>학과 소식과 중요 안내사항</p>
+  </section>
+
+  <section class="notices-section">
+    <div class="container">
+      <div class="notices-toolbar">
+        <div class="notices-filters">
+          <button class="filter-btn active" data-category="all">전체</button>
+          <button class="filter-btn" data-category="학사">학사</button>
+          <button class="filter-btn" data-category="행사">행사</button>
+          <button class="filter-btn" data-category="취업">취업</button>
+          <button class="filter-btn" data-category="일반">일반</button>
+        </div>
+        <div class="notices-search">
+          <input type="text" id="notice-search" placeholder="검색어를 입력하세요">
+        </div>
+      </div>
+      <div class="notices-list" id="notices-list"></div>
+      <div class="pagination" id="notices-pagination"></div>
+    </div>
+  </section>
+
+  <div class="modal-overlay" id="notice-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modal-title"></h2>
+        <button class="modal-close" id="modal-close">&times;</button>
+      </div>
+      <div class="modal-meta" id="modal-meta"></div>
+      <div class="modal-body" id="modal-body"></div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="container">
+      <p>&copy; 2026 인공지능융합학과. All Rights Reserved.</p>
+    </div>
+  </footer>
+
+  <script src="js/data-store.js"></script>
+  <script src="js/seed-data.js"></script>
+  <script src="js/render-utils.js"></script>
+  <script src="script.js"></script>
+  <script src="js/notices-page.js"></script>
+</body>
+</html>

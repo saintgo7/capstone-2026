@@ -13,6 +13,9 @@
       <ul class="nav-links">
         <li><a href="index.html" class="active">홈</a></li>
         <li><a href="program.html">교수진 &amp; 커리큘럼</a></li>
+        <li><a href="notices.html">공지사항</a></li>
+        <li><a href="gallery.html">갤러리</a></li>
+        <li><a href="contact.html">연락처</a></li>
       </ul>
       <button class="menu-toggle" aria-label="메뉴 열기">☰</button>
     </nav>
@@ -38,8 +41,8 @@
 
   <section class="vision">
     <div class="container">
-      <h2>비전 & 교육목표</h2>
-      <div class="card-grid">
+      <h2>비전 &amp; 교육목표</h2>
+      <div class="card-grid" id="vision-grid">
         <div class="card">
           <div class="card-icon">🎯</div>
           <h3>비전</h3>
@@ -66,24 +69,7 @@
 
   <section class="stats">
     <div class="container">
-      <div class="stat-grid">
-        <div class="stat-item">
-          <span class="stat-number" data-target="15">0</span>
-          <span class="stat-label">전임교수</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-number" data-target="200">0</span>
-          <span class="stat-label">재학생</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-number" data-target="95">0</span>
-          <span class="stat-label">취업률 %</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-number" data-target="50">0</span>
-          <span class="stat-label">산학협력 기업</span>
-        </div>
-      </div>
+      <div class="stat-grid" id="stat-grid"></div>
     </div>
   </section>
 
@@ -93,6 +79,9 @@
     </div>
   </footer>
 
+  <script src="js/data-store.js"></script>
+  <script src="js/seed-data.js"></script>
+  <script src="js/render-utils.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

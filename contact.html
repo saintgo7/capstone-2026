@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>연락처 | 인공지능융합학과</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <nav class="navbar">
+      <div class="logo">AI융합학과</div>
+      <ul class="nav-links">
+        <li><a href="index.html">홈</a></li>
+        <li><a href="program.html">교수진 &amp; 커리큘럼</a></li>
+        <li><a href="notices.html">공지사항</a></li>
+        <li><a href="gallery.html">갤러리</a></li>
+        <li><a href="contact.html" class="active">연락처</a></li>
+      </ul>
+      <button class="menu-toggle" aria-label="메뉴 열기">☰</button>
+    </nav>
+  </header>
+
+  <section class="page-hero">
+    <h1>연락처</h1>
+    <p>학과 사무실 정보 및 오시는 길</p>
+  </section>
+
+  <section class="contact-section">
+    <div class="container">
+      <div class="contact-grid">
+        <div class="contact-info">
+          <h2>학과 사무실</h2>
+          <div class="contact-item">
+            <span class="contact-icon">📞</span>
+            <div>
+              <strong>전화</strong>
+              <p id="contact-phone"></p>
+            </div>
+          </div>
+          <div class="contact-item">
+            <span class="contact-icon">📧</span>
+            <div>
+              <strong>이메일</strong>
+              <p id="contact-email"></p>
+            </div>
+          </div>
+          <div class="contact-item">
+            <span class="contact-icon">📍</span>
+            <div>
+              <strong>주소</strong>
+              <p id="contact-address"></p>
+            </div>
+          </div>
+          <div class="contact-item">
+            <span class="contact-icon">🕐</span>
+            <div>
+              <strong>업무시간</strong>
+              <p id="contact-hours"></p>
+            </div>
+          </div>
+        </div>
+        <div class="contact-map">
+          <h2>오시는 길</h2>
+          <div class="map-container" id="map-container"></div>
+        </div>
+      </div>
+
+      <div class="contact-form-section">
+        <h2>문의하기</h2>
+        <form class="contact-form" id="contact-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="inquiry-name">이름 <span class="required">*</span></label>
+              <input type="text" id="inquiry-name" required maxlength="50">
+            </div>
+            <div class="form-group">
+              <label for="inquiry-email">이메일 <span class="required">*</span></label>
+              <input type="email" id="inquiry-email" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="inquiry-subject">제목 <span class="required">*</span></label>
+            <input type="text" id="inquiry-subject" required maxlength="100">
+          </div>
+          <div class="form-group">
+            <label for="inquiry-message">내용 <span class="required">*</span></label>
+            <textarea id="inquiry-message" rows="6" required maxlength="1000"></textarea>
+          </div>
+          <button type="submit" class="btn">문의 보내기</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container">
+      <p>&copy; 2026 인공지능융합학과. All Rights Reserved.</p>
+    </div>
+  </footer>
+
+  <script src="js/data-store.js"></script>
+  <script src="js/seed-data.js"></script>
+  <script src="js/render-utils.js"></script>
+  <script src="script.js"></script>
+  <script src="js/contact-page.js"></script>
+</body>
+</html>

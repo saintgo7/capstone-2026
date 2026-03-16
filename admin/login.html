@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>관리자 로그인 | 인공지능융합학과</title>
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body class="login-page">
+  <div class="login-container">
+    <div class="login-box">
+      <div class="login-logo">AI융합학과</div>
+      <h1>관리자 로그인</h1>
+      <form id="login-form">
+        <div class="form-group">
+          <label for="password">비밀번호</label>
+          <input type="password" id="password" placeholder="비밀번호를 입력하세요" required autofocus>
+        </div>
+        <button type="submit" class="login-btn">로그인</button>
+        <p class="login-error" id="login-error"></p>
+      </form>
+    </div>
+  </div>
+
+  <script src="../js/data-store.js"></script>
+  <script src="../js/seed-data.js"></script>
+  <script>
+    SeedData.initAll();
+
+    if (sessionStorage.getItem('aiDept_auth') === 'true') {
+      window.location.href = 'index.html';
+    }
+
+    document.getElementById('login-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var password = document.getElementById('password').value;
+      var errorEl = document.getElementById('login-error');
+
+      if (!password) {
+        errorEl.textContent = '비밀번호를 입력해주세요.';
+        return;
+      }
+
+      var encoder = new TextEncoder();
+      var data = encoder.encode(password);
+      crypto.subtle.digest('SHA-256', data).then(function (buffer) {
+        var hashArray = Array.from(new Uint8Array(buffer));
+        var hash = hashArray.map(function (b) {
+          return b.toString(16).padStart(2, '0');
+        }).join('');
+
+        var admin = DataStore.getObject('admin');
+        if (admin && admin.passwordHash === hash) {
+          sessionStorage.setItem('aiDept_auth', 'true');
+          window.location.href = 'index.html';
+        } else {
+          errorEl.textContent = '비밀번호가 올바르지 않습니다.';
+          document.getElementById('password').value = '';
+          document.getElementById('password').focus();
+        }
+      });
+    });
+  </script>
+</body>
+</html>
