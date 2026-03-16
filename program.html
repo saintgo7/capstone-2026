@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>교수진 & 커리큘럼 | 인공지능융합학과</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <nav class="navbar">
+      <div class="logo">AI융합학과</div>
+      <ul class="nav-links">
+        <li><a href="index.html">홈</a></li>
+        <li><a href="program.html" class="active">교수진 &amp; 커리큘럼</a></li>
+      </ul>
+      <button class="menu-toggle" aria-label="메뉴 열기">☰</button>
+    </nav>
+  </header>
+
+  <section class="page-hero">
+    <h1>교수진 & 커리큘럼</h1>
+    <p>최고의 교수진과 체계적인 교육과정</p>
+  </section>
+
+  <section class="professors">
+    <div class="container">
+      <h2>교수진</h2>
+      <div class="prof-grid">
+        <div class="prof-card">
+          <div class="prof-avatar">👨‍🏫</div>
+          <h3>김지능 교수</h3>
+          <p class="prof-field">머신러닝 / 딥러닝</p>
+          <p class="prof-desc">MIT 박사, 자연어처리 및 강화학습 연구</p>
+        </div>
+        <div class="prof-card">
+          <div class="prof-avatar">👩‍🏫</div>
+          <h3>이데이터 교수</h3>
+          <p class="prof-field">데이터사이언스</p>
+          <p class="prof-desc">Stanford 박사, 빅데이터 분석 및 시각화 전문</p>
+        </div>
+        <div class="prof-card">
+          <div class="prof-avatar">👨‍🏫</div>
+          <h3>박비전 교수</h3>
+          <p class="prof-field">컴퓨터비전</p>
+          <p class="prof-desc">KAIST 박사, 영상인식 및 자율주행 연구</p>
+        </div>
+        <div class="prof-card">
+          <div class="prof-avatar">👩‍🏫</div>
+          <h3>최융합 교수</h3>
+          <p class="prof-field">AI 융합 응용</p>
+          <p class="prof-desc">서울대 박사, AI 헬스케어 및 스마트팩토리 연구</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="curriculum">
+    <div class="container">
+      <h2>교육과정</h2>
+      <div class="tab-container">
+        <div class="tabs">
+          <button class="tab active" data-year="1">1학년</button>
+          <button class="tab" data-year="2">2학년</button>
+          <button class="tab" data-year="3">3학년</button>
+          <button class="tab" data-year="4">4학년</button>
+        </div>
+        <div class="tab-content active" data-year="1">
+          <table>
+            <thead>
+              <tr><th>구분</th><th>과목명</th><th>학점</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>전공기초</td><td>프로그래밍 기초 (Python)</td><td>3</td></tr>
+              <tr><td>전공기초</td><td>인공지능 개론</td><td>3</td></tr>
+              <tr><td>전공기초</td><td>선형대수학</td><td>3</td></tr>
+              <tr><td>전공기초</td><td>확률과 통계</td><td>3</td></tr>
+              <tr><td>교양</td><td>컴퓨팅 사고</td><td>2</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="tab-content" data-year="2">
+          <table>
+            <thead>
+              <tr><th>구분</th><th>과목명</th><th>학점</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>전공필수</td><td>자료구조와 알고리즘</td><td>3</td></tr>
+              <tr><td>전공필수</td><td>머신러닝</td><td>3</td></tr>
+              <tr><td>전공선택</td><td>데이터베이스</td><td>3</td></tr>
+              <tr><td>전공선택</td><td>웹 프로그래밍</td><td>3</td></tr>
+              <tr><td>전공선택</td><td>수치해석</td><td>3</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="tab-content" data-year="3">
+          <table>
+            <thead>
+              <tr><th>구분</th><th>과목명</th><th>학점</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>전공필수</td><td>딥러닝</td><td>3</td></tr>
+              <tr><td>전공필수</td><td>컴퓨터비전</td><td>3</td></tr>
+              <tr><td>전공선택</td><td>자연어처리</td><td>3</td></tr>
+              <tr><td>전공선택</td><td>강화학습</td><td>3</td></tr>
+              <tr><td>전공선택</td><td>클라우드 컴퓨팅</td><td>3</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="tab-content" data-year="4">
+          <table>
+            <thead>
+              <tr><th>구분</th><th>과목명</th><th>학점</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>전공필수</td><td>캡스톤 디자인</td><td>3</td></tr>
+              <tr><td>전공필수</td><td>AI 프로젝트 실습</td><td>3</td></tr>
+              <tr><td>전공선택</td><td>생성형 AI</td><td>3</td></tr>
+              <tr><td>전공선택</td><td>AI 윤리와 법</td><td>3</td></tr>
+              <tr><td>전공선택</td><td>산학협력 인턴십</td><td>6</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container">
+      <p>&copy; 2026 인공지능융합학과. All Rights Reserved.</p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
