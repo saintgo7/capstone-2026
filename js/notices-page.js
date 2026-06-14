@@ -116,7 +116,7 @@
     var modal = document.getElementById('notice-modal');
     document.getElementById('modal-title').textContent = notice.title;
     document.getElementById('modal-meta').innerHTML =
-      '<span class="notice-category category-' + notice.category + '">' +
+      '<span class="notice-category category-' + RenderUtils.escapeHtml(notice.category) + '">' +
       RenderUtils.escapeHtml(notice.category) + '</span>' +
       '<span>' + RenderUtils.formatDate(notice.createdAt) + '</span>';
     document.getElementById('modal-body').innerHTML = RenderUtils.nl2br(notice.content);
